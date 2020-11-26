@@ -1,7 +1,10 @@
 import os
 import argparse
 import folderstats
+import logging
 
+# Setup logging
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
 def main():
     parser = argparse.ArgumentParser(
@@ -38,6 +41,7 @@ def main():
         help='verbose console output',
         required=False)
 
+    logger = logging.getLogger("folderstats")
     args = parser.parse_args()
 
     if not os.path.isdir(args.folderpath):
@@ -50,6 +54,7 @@ def main():
         exit(-1)
 
     df = folderstats.folderstats(args.folderpath,
+                                 logger=logger,
                                  hash_name=args.hash_name,
                                  microseconds=args.microseconds,
                                  absolute_paths=args.absolute_paths,

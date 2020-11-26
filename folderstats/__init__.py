@@ -22,7 +22,7 @@ def calculate_hash(filepath, hash_name):
         return checksum.hexdigest()
 
 
-def _recursive_folderstats(folderpath, items=None, hash_name=None,
+def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
                            ignore_hidden=False, depth=0, idx=1, parent_idx=0,
                            verbose=False):
     """Helper function that recursively collects folder statistics and returns current id, foldersize and number of files traversed."""
@@ -36,29 +36,31 @@ def _recursive_folderstats(folderpath, items=None, hash_name=None,
                 continue
 
             filepath = os.path.join(folderpath, f)
-            stats = os.stat(filepath)
-            foldersize += stats.st_size
-            idx += 1
 
-            if os.path.isdir(filepath):
-                if verbose:
-                    print('FOLDER : {}'.format(filepath))
+            try:
+                stats = os.stat(filepath)
+                foldersize += stats.st_size
+                idx += 1
 
-                idx, items, _foldersize, _num_files = _recursive_folderstats(
-                    filepath, items, hash_name,
-                    ignore_hidden, depth + 1, idx, current_idx, verbose)
-                foldersize += _foldersize
-                num_files += _num_files
-            else:
-                filename, extension = os.path.splitext(f)
-                extension = extension[1:] if extension else None
-                item = [idx, filepath, filename, extension, stats.st_size,
-                        stats.st_atime, stats.st_mtime, stats.st_ctime,
-                        False, None, depth, current_idx, stats.st_uid]
-                if hash_name:
-                    item.append(calculate_hash(filepath, hash_name))
-                items.append(item)
-                num_files += 1
+                if os.path.isdir(filepath):
+                    if verbose:
+                        print('FOLDER : {}'.format(filepath))
+
+                    idx, items, _foldersize, _num_files = _recursive_folderstats(filepath, logger, items, hash_name, ignore_hidden, depth + 1, idx, current_idx, verbose)
+                    foldersize += _foldersize
+                    num_files += _num_files
+                else:
+                    filename, extension = os.path.splitext(f)
+                    extension = extension[1:] if extension else None
+                    item = [idx, filepath, filename, extension, stats.st_size,
+                            stats.st_atime, stats.st_mtime, stats.st_ctime,
+                            False, None, depth, current_idx, stats.st_uid]
+                    if hash_name:
+                        item.append(calculate_hash(filepath, hash_name))
+                    items.append(item)
+                    num_files += 1
+            except FileNotFoundError:
+                logger.error('FileNotFoundError: ' + filepath)
 
     stats = os.stat(folderpath)
     foldername = os.path.basename(folderpath)
@@ -72,7 +74,7 @@ def _recursive_folderstats(folderpath, items=None, hash_name=None,
     return idx, items, foldersize, num_files
 
 
-def folderstats(folderpath, hash_name=None, microseconds=False,
+def folderstats(folderpath, logger, hash_name=None, microseconds=False,
                 absolute_paths=False, ignore_hidden=False, parent=True,
                 verbose=False):
     """Function that returns a Pandas dataframe from the folders and files from a selected folder."""
@@ -85,6 +87,7 @@ def folderstats(folderpath, hash_name=None, microseconds=False,
 
     idx, items, foldersize, num_files = _recursive_folderstats(
         folderpath,
+        logger=logger,
         hash_name=hash_name,
         ignore_hidden=ignore_hidden,
         verbose=verbose)
