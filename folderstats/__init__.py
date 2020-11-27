@@ -63,6 +63,8 @@ def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
                 logger.error('FileNotFoundError: ' + filepath)
             except PermissionError:
                 logger.error('PermissionError: ' + filepath)
+            except OSError:
+                logger.error('OSError: ' + filepath)
 
     stats = os.stat(folderpath)
     foldername = os.path.basename(folderpath)
