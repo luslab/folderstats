@@ -23,7 +23,7 @@ def calculate_hash(filepath, hash_name):
 
 
 def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
-                           ignore_hidden=False, depth=0, idx=1, parent_idx=0,
+                           ignore_hidden=False, depth=0, idx=1, parent_idx=0, parent_name="",
                            verbose=False):
     """Helper function that recursively collects folder statistics and returns current id, foldersize and number of files traversed."""
     items = items if items is not None else []
@@ -31,6 +31,9 @@ def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
     current_idx = idx
 
     if os.access(folderpath, os.R_OK):
+        parent_foldername = os.path.dirname(folderpath)
+        parent_foldername = os.path.basename(parent_foldername)
+
         for f in os.listdir(folderpath):
             if ignore_hidden and f.startswith('.'):
                 continue
@@ -46,7 +49,7 @@ def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
                     if verbose:
                         print('FOLDER : {}'.format(filepath))
 
-                    idx, items, _foldersize, _num_files = _recursive_folderstats(filepath, logger, items, hash_name, ignore_hidden, depth + 1, idx, current_idx, verbose)
+                    idx, items, _foldersize, _num_files = _recursive_folderstats(filepath, logger, items, hash_name, ignore_hidden, depth + 1, idx, current_idx, parent_foldername, verbose)
                     foldersize += _foldersize
                     num_files += _num_files
                 else:
@@ -70,7 +73,7 @@ def _recursive_folderstats(folderpath, logger, items=None, hash_name=None,
     foldername = os.path.basename(folderpath)
     item = [current_idx, folderpath, foldername, None, foldersize,
             stats.st_atime, stats.st_mtime, stats.st_ctime,
-            True, num_files, depth, parent_idx, stats.st_uid]
+            True, num_files, depth, parent_idx, parent_name, stats.st_uid]
     if hash_name:
         item.append(None)
     items.append(item)
@@ -84,7 +87,7 @@ def folderstats(folderpath, logger, hash_name=None, microseconds=False,
     """Function that returns a Pandas dataframe from the folders and files from a selected folder."""
     columns = ['id', 'path', 'name', 'extension', 'size',
                'atime', 'mtime', 'ctime',
-               'folder', 'num_files', 'depth', 'parent', 'uid']
+               'folder', 'num_files', 'depth', 'parent', 'parent_name', 'uid']
     if hash_name:
         hash_name = hash_name.lower()
         columns.append(hash_name)
